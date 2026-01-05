@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kelime Öğrenme Asistanı</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 800px; margin: 0 auto; }
+        .header { text-align: center; color: white; margin-bottom: 30px; }
+        .header h1 { font-size: 2em; margin-bottom: 10px; }
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        .input-group input, .input-group textarea, .input-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        .input-group textarea { resize: vertical; min-height: 80px; }
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .btn:hover { transform: translateY(-2px); }
+        .btn:disabled { background: #ccc; cursor: not-allowed; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab {
+            flex: 1;
+            padding: 12px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .tab.active { background: white; color: #667eea; }
+        .hidden { display: none; }
+        .stats {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .vocab-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .vocab-card-header { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+        .vocab-emoji { font-size: 3em; }
+        .vocab-word h3 { color: #000; font-weight: bold; font-size: 1.5em; margin-bottom: 5px; }
+        .vocab-context {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #667eea;
+        }
+        .vocab-context strong { color: #dc3545; font-weight: bold; }
+        .vocab-examples { margin-top: 15px; }
+        .vocab-examples h4 { color: #555; margin-bottom: 8px; font-size: 0.9em; }
+        .example {
+            background: #fff3cd;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            border-left: 3px solid #ffc107;
+        }
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        .speaker-icon {
+            cursor: pointer;
+            font-size: 1.2em;
+            margin-left: 8px;
+            display: inline-block;
+            transition: transform 0.2s;
+        }
+        .speaker-icon:hover { transform: scale(1.2); }
+        .controls { display: flex; gap: 10px; margin-bottom: 20px; }
+        .controls button {
+            flex: 1;
+            padding: 12px;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .pagination button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .pagination button:disabled { background: #ccc; cursor: not-allowed; }
+        .refresh-btn {
+            padding: 8px 15px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 Kelime Öğrenme Asistanı</h1>
+            <p>AI ile İngilizce kelime öğren!</p>
+        </div>
+
+        <div class="stats">
+            <h3>📊 Toplam Kelime: <span id="wordCount">0</span></h3>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('add')">➕ Yeni Kelime</button>
+            <button class="tab" onclick="showTab('list')">📖 Kelimelerim</button>
+            <button class="tab" onclick="showTab('example')">✍️ Örnek Metin</button>
+        </div>
+
+        <div id="addTab" class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>🆕 Yeni Kelime Ekle</h2>
+                <button class="refresh-btn" onclick="refreshData()">🔄 Yenile</button>
+            </div>
+            
+            <div class="input-group">
+                <label>📝 Kelime (İngilizce)</label>
+                <input type="text" id="wordInput" placeholder="örn: apple">
+            </div>
+
+            <div class="input-group">
+                <label>💬 Bağlam Cümlesi (seviye: A1, B2 vs.)</label>
+                <textarea id="contextInput" placeholder="Kelimeyi içeren cümle..."></textarea>
+            </div>
+
+            <button class="btn" onclick="addWord()">✨ Kelimeyi Ekle</button>
+        </div>
+
+        <div id="listTab" class="hidden">
+            <div class="controls">
+                <button class="refresh-btn" onclick="refreshData()">🔄 Yenile</button>
+                <button onclick="shuffleWords()" style="background: #ff9800;">🔀 Karıştır</button>
+                <button onclick="openSheets()" style="background: #17a2b8;">📊 Sheets</button>
+            </div>
+            <div id="vocabList"></div>
+        </div>
+
+        <div id="exampleTab" class="card hidden">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>✍️ Örnek Metin Oluştur</h2>
+                <button class="refresh-btn" onclick="refreshData()">🔄 Yenile</button>
+            </div>
+            
+            <div class="input-group">
+                <label>📊 Kelime Aralığı</label>
+                <select id="wordRangeSelect">
+                    <option value="1-10">1-10. Kelimeler</option>
+                </select>
+            </div>
+            
+            <button class="btn" onclick="generateText()">✨ Metin Oluştur</button>
+            
+            <div id="textResult" style="margin-top: 20px;"></div>
+        </div>
+    </div>
+
+    <script>
+        const SHEET_ID = '13Tr3E2eSzgBr3FpO7Vu838t2nnlOlIKeIDXtezFpoMM';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyQk-Gt5s820Kk0aHmWbBnn3UL7LqSnjv6UWRCHsZFKGAh1uMwjuCHQq-U5nfXbrhZA/exec';
+
+        let vocabulary = [];
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let isLoading = false;
+
+        loadInitialData();
+
+        function showTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('addTab').classList.add('hidden');
+            document.getElementById('listTab').classList.add('hidden');
+            document.getElementById('exampleTab').classList.add('hidden');
+
+            if (tab === 'add') {
+                document.querySelectorAll('.tab')[0].classList.add('active');
+                document.getElementById('addTab').classList.remove('hidden');
+            } else if (tab === 'list') {
+                document.querySelectorAll('.tab')[1].classList.add('active');
+                document.getElementById('listTab').classList.remove('hidden');
+            } else {
+                document.querySelectorAll('.tab')[2].classList.add('active');
+                document.getElementById('exampleTab').classList.remove('hidden');
+            }
+        }
+
+        async function loadInitialData() {
+            if (isLoading) return;
+            isLoading = true;
+
+            try {
+                console.log('Loading data from:', SCRIPT_URL);
+                
+                const response = await fetch(SCRIPT_URL);
+                const data = await response.json();
+                
+                console.log('Loaded words:', data.length);
+                
+                vocabulary = [];
+                
+                for (let i = 0; i < data.length; i++) {
+                    const item = data[i];
+                    console.log(`Fetching examples for: ${item.word}`);
+                    
+                    try {
+                        const exampleResponse = await fetch(`${SCRIPT_URL}?action=getExamples&word=${encodeURIComponent(item.word)}&context=${encodeURIComponent(item.context)}&t=${Date.now()}`);
+                        const examplesData = await exampleResponse.json();
+                        
+                        vocabulary.push({
+                            id: i,
+                            word: item.word,
+                            context: item.context,
+                            emoji: getEmoji(item.word),
+                            examples: examplesData.examples || []
+                        });
+                    } catch (err) {
+                        console.error(`Error for ${item.word}:`, err);
+                        vocabulary.push({
+                            id: i,
+                            word: item.word,
+                            context: item.context,
+                            emoji: getEmoji(item.word),
+                            examples: []
+                        });
+                    }
+                }
+                
+                updateStats();
+                displayWords();
+                updateRangeSelector();
+                
+            } catch (error) {
+                console.error('Loading error:', error);
+                alert('Yükleme hatası: ' + error.message);
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        async function refreshData() {
+            if (isLoading) {
+                alert('⏳ Zaten yükleniyor...');
+                return;
+            }
+            alert('🔄 Yenileniyor...');
+            await loadInitialData();
+            alert('✅ Yenilendi!');
+        }
+
+        async function addWord() {
+            const word = document.getElementById('wordInput').value.trim();
+            const context = document.getElementById('contextInput').value.trim();
+
+            if (!word) {
+                alert('Kelime girin!');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${SCRIPT_URL}?action=addWord&word=${encodeURIComponent(word)}&context=${encodeURIComponent(context)}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    document.getElementById('wordInput').value = '';
+                    document.getElementById('contextInput').value = '';
+                    alert('✅ Eklendi!');
+                    setTimeout(() => {
+                        loadInitialData();
+                        showTab('list');
+                    }, 1000);
+                }
+            } catch (error) {
+                alert('❌ Hata: ' + error.message);
+            }
+        }
+
+        async function deleteWord(word) {
+            if (!confirm(`"${word}" silinsin mi?`)) return;
+
+            try {
+                const response = await fetch(`${SCRIPT_URL}?action=deleteWord&word=${encodeURIComponent(word)}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('✅ Silindi!');
+                    loadInitialData();
+                }
+            } catch (error) {
+                alert('❌ Hata: ' + error.message);
+            }
+        }
+
+        async function shuffleWords() {
+            if (!confirm('Kelimeleri karıştır?')) return;
+
+            try {
+                const response = await fetch(`${SCRIPT_URL}?action=shuffleWords`);
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('✅ Karıştırıldı!');
+                    loadInitialData();
+                }
+            } catch (error) {
+                alert('❌ Hata: ' + error.message);
+            }
+        }
+
+        function displayWords() {
+            const list = document.getElementById('vocabList');
+            
+            if (vocabulary.length === 0) {
+                list.innerHTML = '<div class="card"><p style="text-align: center;">Henüz kelime yok!</p></div>';
+                return;
+            }
+
+            const totalPages = Math.ceil(vocabulary.length / itemsPerPage);
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const items = vocabulary.slice(start, end);
+
+            let html = items.map(item => `
+                <div class="vocab-card">
+                    <div class="vocab-card-header">
+                        <div class="vocab-emoji">${item.emoji}</div>
+                        <div class="vocab-word">
+                            <h3>
+                                ${item.word}
+                                <span class="speaker-icon" onclick="speak('${item.word}')">🔊</span>
+                            </h3>
+                        </div>
+                    </div>
+                    
+                    <div class="vocab-context">
+                        <strong>Bağlam:</strong> ${boldWord(item.context, item.word)}
+                        <span class="speaker-icon" onclick="speak('${item.context}')">🔊</span>
+                    </div>
+
+                    <div class="vocab-examples">
+                        <h4>💡 Örnek Cümleler:</h4>
+                        ${item.examples.length > 0 ? item.examples.map(ex => `
+                            <div class="example">
+                                ${ex}
+                                <span class="speaker-icon" onclick="speak('${ex.replace(/<[^>]*>/g, '')}')">🔊</span>
+                            </div>
+                        `).join('') : '<p>Örnekler yükleniyor...</p>'}
+                    </div>
+
+                    <button class="delete-btn" onclick="deleteWord('${item.word}')">🗑️ Sil</button>
+                </div>
+            `).join('');
+
+            if (totalPages > 1) {
+                html += `
+                    <div class="pagination">
+                        <button onclick="changePage(-1)" ${currentPage === 1 ? 'disabled' : ''}>◀ Önceki</button>
+                        <span style="color: white; font-weight: bold;">Sayfa ${currentPage} / ${totalPages}</span>
+                        <button onclick="changePage(1)" ${currentPage === totalPages ? 'disabled' : ''}>Sonraki ▶</button>
+                    </div>
+                `;
+            }
+
+            list.innerHTML = html;
+        }
+
+        function changePage(direction) {
+            const totalPages = Math.ceil(vocabulary.length / itemsPerPage);
+            currentPage += direction;
+            
+            if (currentPage < 1) currentPage = 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+            
+            displayWords();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function generateText() {
+            const btn = event.target;
+            btn.textContent = '⏳ Oluşturuluyor...';
+            btn.disabled = true;
+
+            try {
+                const range = document.getElementById('wordRangeSelect').value.split('-');
+                const start = parseInt(range[0]);
+                const end = parseInt(range[1]);
+
+                console.log('Generating text for words:', start, '-', end);
+
+                const response = await fetch(`${SCRIPT_URL}?action=generateText&start=${start}&end=${end}`);
+                const text = await response.text();
+
+                console.log('Generated text:', text.substring(0, 100));
+
+                const resultDiv = document.getElementById('textResult');
+                resultDiv.innerHTML = `
+                    <div class="card" style="background: #f8f9fa;">
+                        <div style="white-space: pre-wrap; line-height: 1.8;">${text}</div>
+                        <div style="margin-top: 15px; display: flex; gap: 10px;">
+                            <button onclick="speakText()" style="flex: 1; padding: 10px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">
+                                🔊 Dinle
+                            </button>
+                            <button onclick="copyText()" style="flex: 1; padding: 10px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">
+                                📋 Kopyala
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                alert('❌ Hata: ' + error.message);
+                console.error('Generate text error:', error);
+            } finally {
+                btn.textContent = '✨ Metin Oluştur';
+                btn.disabled = false;
+            }
+        }
+
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text.replace(/<[^>]*>/g, ''));
+                utterance.lang = 'en-US';
+                utterance.rate = 0.9;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function speakText() {
+            const text = document.getElementById('textResult').textContent;
+            const englishPart = text.split('---')[0].replace(/📝.*/g, '').trim();
+            speak(englishPart);
+        }
+
+        function copyText() {
+            const text = document.getElementById('textResult').textContent;
+            navigator.clipboard.writeText(text).then(() => alert('📋 Kopyalandı!'));
+        }
+
+        function openSheets() {
+            window.open(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit`, '_blank');
+        }
+
+        function boldWord(text, word) {
+            const root = word.replace(/s$|ed$|ing$|es$|d$/i, '');
+            const pattern = new RegExp(`\\b(${root}|${root}s|${root}es|${root}ed|${root}ing|${root}d|${word})\\b`, 'gi');
+            return text.replace(pattern, '<b>$1</b>');
+        }
+
+        function getEmoji(word) {
+            const emojiMap = {
+                'happy': '😊', 'sad': '😢', 'love': '❤️', 'book': '📚',
+                'food': '🍕', 'apple': '🍎', 'car': '🚗', 'house': '🏠'
+            };
+            
+            for (let key in emojiMap) {
+                if (word.toLowerCase().includes(key)) return emojiMap[key];
+            }
+            
+            const emojis = ['📌', '💡', '🎯', '🌟', '✨', '🔑', '🎨', '🚀'];
+            return emojis[word.length % emojis.length];
+        }
+
+        function updateStats() {
+            document.getElementById('wordCount').textContent = vocabulary.length;
+        }
+
+        function updateRangeSelector() {
+            const selector = document.getElementById('wordRangeSelect');
+            let options = '';
+            
+            for (let i = 1; i <= vocabulary.length; i += 10) {
+                const end = Math.min(i + 9, vocabulary.length);
+                options += `<option value="${i}-${end}">${i}-${end}. Kelimeler</option>`;
+            }
+            
+            selector.innerHTML = options || '<option value="1-10">Kelime yok</option>';
+        }
+    </script>
+</body>
+</html>
